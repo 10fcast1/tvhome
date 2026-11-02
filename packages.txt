@@ -1,0 +1,11 @@
+# One package per line. Leave this empty until you've run:
+#   ./firetv.sh find amazon
+# and decided what you don't want. Disable ONE at a time first and
+# check the TV still boots to Home before adding the next.
+#
+# Never disable: com.amazon.tv.launcher (until your own launcher works),
+# com.amazon.device.software.ota, com.android.* system packages,
+# anything with "settings", "inputmethod", "tv.input" or "bluetooth".
+#
+# Example (uncomment after verifying it exists on your TV):
+# com.amazon.avod
