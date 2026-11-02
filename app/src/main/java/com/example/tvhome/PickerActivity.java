@@ -34,7 +34,7 @@ public class PickerActivity extends Activity {
         super.onCreate(b);
         prefs = new Prefs(this);
         all = AppRepo.loadAll(this);
-        for (AppRepo.App a : AppRepo.favorites(this, prefs)) selected.add(a.pkg);
+        for (AppRepo.App a : AppRepo.favorites(this, prefs)) if (a.installed) selected.add(a.pkg);
 
         LinearLayout col = new LinearLayout(this);
         col.setOrientation(LinearLayout.VERTICAL);
@@ -56,7 +56,7 @@ public class PickerActivity extends Activity {
             public void onClick(View v) {
                 prefs.resetFavorites();
                 selected.clear();
-                for (AppRepo.App a : AppRepo.favorites(PickerActivity.this, prefs)) selected.add(a.pkg);
+                for (AppRepo.App a : AppRepo.favorites(PickerActivity.this, prefs)) if (a.installed) selected.add(a.pkg);
                 rebuild(0);
             }
         });

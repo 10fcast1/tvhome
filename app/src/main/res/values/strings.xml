@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">AURA OS</string>
+    <string name="home_key_desc">Opens AURA OS when you press the Home button. It does not read your screen.</string>
+</resources>

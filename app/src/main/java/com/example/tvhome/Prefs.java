@@ -6,12 +6,12 @@ import android.content.SharedPreferences;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Stores the chosen layout and the ordered list of apps shown on Home. */
+/** Remembers the last platform you picked and the (optional) custom app list. */
 class Prefs {
-    static final int MODE_ANDROID_TV = 0;
-    static final int MODE_GOOGLE_TV = 1;
-    static final int MODE_APPLE_TV = 2;
-    static final String[] MODE_NAMES = {"Android TV", "Google TV", "Apple TV"};
+    static final int MODE_GOOGLE_TV = 0;
+    static final int MODE_APPLE_TV = 1;
+    static final int MODE_FIRE_TV = 2;
+    static final String[] MODE_NAMES = {"Google TV", "Apple TV", "Fire TV"};
 
     private final SharedPreferences sp;
 
@@ -20,7 +20,8 @@ class Prefs {
     }
 
     int mode() {
-        return sp.getInt("mode", MODE_GOOGLE_TV);
+        int m = sp.getInt("mode", MODE_GOOGLE_TV);
+        return (m >= 0 && m < MODE_NAMES.length) ? m : MODE_GOOGLE_TV;
     }
 
     void setMode(int m) {
