@@ -50,7 +50,7 @@ public class PickerActivity extends Activity {
         hp.bottomMargin = dp(16);
         col.addView(help, hp);
 
-        TextView reset = row("Reset to defaults (YouTube, Netflix, YouTube TV, Hulu, Disney+, Peacock)", false);
+        TextView reset = row("Reset to defaults (all the streaming services you have installed)", false);
         reset.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -120,6 +120,11 @@ public class PickerActivity extends Activity {
                     return false;
                 }
             });
+            if (a.icon != null) {
+                a.icon.setBounds(0, 0, dp(36), dp(36));
+                r.setCompoundDrawables(a.icon, null, null, null);
+                r.setCompoundDrawablePadding(dp(16));
+            }
             list.addView(r);
             if (i == focusIndex) r.requestFocus();
         }

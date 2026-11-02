@@ -46,5 +46,9 @@
         <activity
             android:name=".PickerActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".AllAppsActivity"
+            android:exported="false" />
     </application>
 </manifest>
