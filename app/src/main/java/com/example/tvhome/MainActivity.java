@@ -50,6 +50,7 @@ public class MainActivity extends Activity {
     private TextView clockDate;
     private Prefs prefs;
     private GradientDrawable dynamicBg;
+    private ScenicView scenic;
     private int accent = 0xFF3A4A8A;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable tick = new Runnable() {
@@ -109,14 +110,21 @@ public class MainActivity extends Activity {
         root.removeAllViews();
         dynamicBg = null;
 
-        View bg = new View(this);
-        bg.setBackground(background(mode));
-        root.addView(bg, new FrameLayout.LayoutParams(-1, -1));
+        scenic = null;
+        if (mode == Prefs.MODE_APPLE_TV) {
+            scenic = new ScenicView(this);
+            scenic.setAccent(accent);
+            root.addView(scenic, new FrameLayout.LayoutParams(-1, -1));
+        } else {
+            View bg = new View(this);
+            bg.setBackground(background(mode));
+            root.addView(bg, new FrameLayout.LayoutParams(-1, -1));
+        }
 
         LinearLayout col = vbox();
         col.setPadding(dp(56), dp(24), dp(56), dp(30));
         root.addView(col, new FrameLayout.LayoutParams(-1, -1));
-        col.addView(topBar(mode), new LinearLayout.LayoutParams(-1, -2));
+        col.addView(mode == Prefs.MODE_APPLE_TV ? appleTopBar() : topBar(mode), new LinearLayout.LayoutParams(-1, -2));
 
         List<AppRepo.App> apps = AppRepo.favorites(this, prefs);
         View first = null;
@@ -164,6 +172,11 @@ public class MainActivity extends Activity {
 
     /** Smoothly shifts the Google TV background toward the focused app's colour. */
     private void animateBg(int toAccent) {
+        if (scenic != null) {
+            scenic.animateTo(toAccent);
+            accent = toAccent;
+            return;
+        }
         if (dynamicBg == null) return;
         final GradientDrawable target = dynamicBg;
         ValueAnimator va = ValueAnimator.ofObject(new ArgbEvaluator(), accent, toAccent);
@@ -251,7 +264,7 @@ public class MainActivity extends Activity {
         boolean h24 = DateFormat.is24HourFormat(this);
         Date now = new Date();
         clockTime.setText(DateFormat.format(h24 ? "HH:mm" : "h:mm a", now));
-        clockDate.setText(DateFormat.format("EEEE, MMM d", now));
+        if (clockDate != null) clockDate.setText(DateFormat.format("EEEE, MMM d", now));
     }
 
     private String greeting() {
@@ -400,41 +413,150 @@ public class MainActivity extends Activity {
 
     // ------------------------------------------------------------------ Apple TV look
 
+    private View appleTopBar() {
+        LinearLayout bar = hbox();
+        bar.setGravity(Gravity.CENTER_VERTICAL);
+        View spacer = new View(this);
+        bar.addView(spacer, new LinearLayout.LayoutParams(0, 1, 1f));
+        clockDate = null;
+        clockTime = text("", 18, Color.WHITE);
+        clockTime.setTypeface(MEDIUM);
+        clockTime.setPadding(dp(18), dp(8), dp(18), dp(8));
+        GradientDrawable pillBg = new GradientDrawable();
+        pillBg.setColor(0x55000000);
+        pillBg.setCornerRadius(dp(30));
+        clockTime.setBackground(pillBg);
+        bar.addView(clockTime);
+        return bar;
+    }
+
     private View buildAppleTv(LinearLayout col, List<AppRepo.App> apps) {
+        View spacer = new View(this);
+        col.addView(spacer, new LinearLayout.LayoutParams(-1, 0, 1f));
+
+        // Big title for the focused app, above the dock
+        final TextView title = text("", 48, Color.WHITE);
+        title.setTypeface(MEDIUM);
+        title.setShadowLayer(dp(8), 0, dp(2), 0x99000000);
+        final TextView sub = text("", 18, 0xFFE8EAF2);
+        sub.setShadowLayer(dp(6), 0, dp(1), 0x99000000);
+        LinearLayout heroText = vbox();
+        heroText.setPadding(dp(8), 0, 0, dp(12));
+        heroText.addView(title);
+        heroText.addView(sub);
+        col.addView(heroText, new LinearLayout.LayoutParams(-1, -2));
+
+        // Frosted dock with wide tiles
+        FrameLayout shelf = new FrameLayout(this);
+        shelf.setClipChildren(false);
+        GradientDrawable shelfBg = new GradientDrawable();
+        shelfBg.setColor(0x44000000);
+        shelfBg.setCornerRadius(dp(30));
+        shelfBg.setStroke(dp(1), 0x26FFFFFF);
+        shelf.setBackground(shelfBg);
+
         HorizontalScrollView sv = scroller();
+        sv.setPadding(dp(26), dp(24), dp(26), dp(18));
         LinearLayout row = hbox();
-        row.setGravity(Gravity.CENTER);
         View first = null;
         for (final AppRepo.App a : apps) {
             LinearLayout cell = vbox();
             cell.setGravity(Gravity.CENTER_HORIZONTAL);
 
-            final TextView name = text(a.label, 22, Color.WHITE);
+            final TextView name = text(a.label, 16, Color.WHITE);
             name.setTypeface(MEDIUM);
             name.setAlpha(0f);
             name.setGravity(Gravity.CENTER);
             name.setSingleLine(true);
 
-            FrameLayout tile = makeCard(a, dp(190), dp(190), dp(44), false, 1.20f, false, new Focus() {
+            FrameLayout tile = makeCard(a, dp(200), dp(112), dp(18), true, 1.14f, false, new Focus() {
                 @Override
                 public void on(boolean has) {
                     name.animate().alpha(has ? 1f : 0f).setDuration(160).start();
+                    if (has) {
+                        title.setText(a.label);
+                        sub.setText("Press OK to open");
+                        animateBg(a.color);
+                    }
                 }
             });
-            cell.addView(tile, new LinearLayout.LayoutParams(dp(190), dp(190)));
-            LinearLayout.LayoutParams nl = new LinearLayout.LayoutParams(dp(190), -2);
-            nl.topMargin = dp(34);
+            cell.addView(tile, new LinearLayout.LayoutParams(dp(200), dp(112)));
+            LinearLayout.LayoutParams nl = new LinearLayout.LayoutParams(dp(200), -2);
+            nl.topMargin = dp(16);
             cell.addView(name, nl);
 
             LinearLayout.LayoutParams cl = new LinearLayout.LayoutParams(-2, -2);
-            cl.rightMargin = dp(34);
-            cl.leftMargin = dp(4);
+            cl.rightMargin = dp(22);
             row.addView(cell, cl);
             if (first == null) first = tile;
         }
         sv.addView(row);
-        col.addView(sv, new LinearLayout.LayoutParams(-1, 0, 1f));
+        shelf.addView(sv, new FrameLayout.LayoutParams(-1, -2));
+        col.addView(shelf, new LinearLayout.LayoutParams(-1, -2));
+
+        // Second row of shortcuts, like the extra row under the dock
+        LinearLayout util = hbox();
+        util.setPadding(dp(8), dp(22), 0, 0);
+        util.addView(makeAction("All apps", 0xFF3B82F6, new Runnable() {
+            @Override
+            public void run() {
+                startActivity(new Intent(MainActivity.this, AllAppsActivity.class));
+            }
+        }), actionParams());
+        util.addView(makeAction("Edit apps", 0xFFEC4899, new Runnable() {
+            @Override
+            public void run() {
+                startActivity(new Intent(MainActivity.this, PickerActivity.class));
+            }
+        }), actionParams());
+        util.addView(makeAction("Settings", 0xFF64748B, new Runnable() {
+            @Override
+            public void run() {
+                openSettings();
+            }
+        }), actionParams());
+        util.addView(makeAction("Switch look", 0xFF8B5CF6, new Runnable() {
+            @Override
+            public void run() {
+                prefs.setMode((prefs.mode() + 1) % 3);
+                render();
+            }
+        }), actionParams());
+        col.addView(util, new LinearLayout.LayoutParams(-1, -2));
         return first;
+    }
+
+    private LinearLayout.LayoutParams actionParams() {
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(150), dp(56));
+        lp.rightMargin = dp(16);
+        return lp;
+    }
+
+    private FrameLayout makeAction(String label, final int color, final Runnable run) {
+        final FrameLayout f = new FrameLayout(this);
+        paintCard(f, color, dp(16), false, false);
+        f.setClipToOutline(true);
+        TextView t = text(label, 16, Color.WHITE);
+        t.setTypeface(MEDIUM);
+        t.setGravity(Gravity.CENTER);
+        f.addView(t, new FrameLayout.LayoutParams(-1, -1));
+        f.setFocusable(true);
+        f.setClickable(true);
+        f.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean has) {
+                paintCard(f, color, dp(16), has, false);
+                v.animate().scaleX(has ? 1.10f : 1f).scaleY(has ? 1.10f : 1f).setDuration(150).start();
+                v.setElevation(has ? dp(16) : 0);
+            }
+        });
+        f.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                run.run();
+            }
+        });
+        return f;
     }
 
     // ------------------------------------------------------------------ building blocks
